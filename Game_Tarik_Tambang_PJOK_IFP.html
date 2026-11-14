@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarik Tambang - Kuis PJOK</title>
+<style>
+:root{--navy:#14213d;--blue:#2878d0;--red:#e94f64;--gold:#ffd166;--green:#20a879}
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,Arial,sans-serif;background:linear-gradient(135deg,#10213e,#1b4264);color:#fff;min-height:100vh}
+header{padding:12px 18px;text-align:center;background:#0b1730;border-bottom:3px solid var(--gold)}
+h1{margin:0;font-size:clamp(22px,3vw,36px)} .sub{opacity:.85;font-size:14px}
+.toolbar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px}
+button{border:0;border-radius:12px;padding:11px 16px;font-weight:800;font-size:15px;cursor:pointer;touch-action:manipulation}
+.toolbar button{background:var(--gold);color:#17233d}.toolbar button.secondary{background:#e8f1ff;color:#17233d}
+.status{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;padding:3px 10px 10px;font-weight:700}
+.ropebox{margin:0 auto 12px;width:min(900px,94%);background:#ffffff14;border:1px solid #ffffff30;border-radius:18px;padding:8px 14px;text-align:center}
+.rope-labels{display:flex;justify-content:space-between;font-weight:900;font-size:14px}
+.rope{height:28px;position:relative;margin:7px 7% 2px;background:repeating-linear-gradient(90deg,#d7b27a 0 12px,#b98b4e 12px 24px);border:3px solid #714b28;border-radius:20px;transition:all .35s}
+.knot{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:14px;height:40px;border-radius:8px;background:#fff36a;border:3px solid #6d4a20;transition:left .45s}
+.boards{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 12px 16px;max-width:1500px;margin:auto}
+.board{border-radius:20px;padding:14px;background:#f8fbff;color:#17233d;min-height:440px;box-shadow:0 10px 28px #0004;display:flex;flex-direction:column}
+.board.red{border-top:9px solid var(--red)}.board.blue{border-top:9px solid var(--blue)}
+.teamhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.teamhead h2{margin:0;font-size:clamp(18px,2vw,26px)} .score{font-size:28px;font-weight:950}
+.progress{height:9px;background:#dce4ef;border-radius:20px;overflow:hidden;margin:8px 0 12px}.progress span{display:block;height:100%;background:var(--green);width:0%;transition:width .3s}
+.qmeta{font-size:13px;color:#5b6880;font-weight:700}
+.question{font-size:clamp(18px,2vw,25px);font-weight:850;line-height:1.3;margin:10px 0 14px;min-height:65px}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.answer{background:#eaf0f8;color:#17233d;text-align:left;min-height:58px;display:flex;align-items:center;gap:9px;border:2px solid transparent;font-size:clamp(14px,1.4vw,18px)}
+.answer b{background:#fff;border-radius:8px;padding:5px 9px;color:#243b60}
+.answer:disabled{opacity:.75;cursor:default}
+.answer.correct{background:#d9f7e9;border-color:#20a879}.answer.wrong{background:#ffe0e4;border-color:#e94f64}
+.feedback{min-height:35px;margin:10px 0;font-weight:800}
+.nextrow{display:flex;justify-content:space-between;align-items:center;margin-top:auto;gap:8px}
+.nextrow button{background:#17233d;color:white}.nextrow button:disabled{opacity:.35}
+.start{background:#ffd166!important;color:#17233d!important}
+.note{font-size:12px;color:#63718a}
+.overlay{position:fixed;inset:0;background:#071326dd;display:none;align-items:center;justify-content:center;padding:20px;z-index:5}
+.modal{background:white;color:#17233d;border-radius:22px;padding:28px;max-width:520px;text-align:center}
+.modal h2{font-size:32px;margin:5px}.modal button{background:#17233d;color:white}
+@media(max-width:760px){.boards{grid-template-columns:1fr}.board{min-height:400px}.ropebox{margin-bottom:10px}.answer{min-height:52px}}
+@media(max-width:430px){.answers{grid-template-columns:1fr}.board{padding:11px}}
+</style>
+</head>
+<body>
+<header><h1>🏆 TARIK TAMBANG KUIS PJOK 🏆</h1><div class="sub">Dua tim bermain bersama • Pilih jawaban yang benar untuk menarik tali!</div></header>
+<div class="toolbar">
+<button class="start" id="startBtn">▶ MULAI / ACAK SOAL</button>
+<button id="downloadBtn">⬇ UNDUH SOAL ACAK + KUNCI</button>
+<button class="secondary" id="resetBtn">↻ ULANGI PERMAINAN</button>
+<button class="secondary" id="fullBtn">⛶ LAYAR PENUH</button>
+</div>
+<div class="status"><span>🔴 Tim Merah: <b id="redTotal">0</b></span><span>🔵 Tim Biru: <b id="blueTotal">0</b></span><span>Soal diacak untuk setiap tim</span></div>
+<div class="ropebox"><div class="rope-labels"><span>🔴 TIM MERAH</span><span>🔵 TIM BIRU</span></div><div class="rope"><div class="knot" id="knot"></div></div><div class="note">Setiap jawaban benar menarik tali ke arah tim tersebut.</div></div>
+<main class="boards">
+<section class="board red" id="redBoard">
+<div class="teamhead"><h2>🔴 PAPAN TIM MERAH</h2><div class="score"><span id="redScore">0</span> ⭐</div></div>
+<div class="progress"><span id="redProgress"></span></div><div class="qmeta" id="redMeta">Tekan MULAI untuk bermain</div>
+<div class="question" id="redQuestion">Siap menjadi juara?</div><div class="answers" id="redAnswers"></div>
+<div class="feedback" id="redFeedback">Diskusikan bersama tim sebelum memilih.</div>
+<div class="nextrow"><span class="note" id="redCount">0 / 50</span><button id="redNext" disabled>Soal berikutnya →</button></div>
+</section>
+<section class="board blue" id="blueBoard">
+<div class="teamhead"><h2>🔵 PAPAN TIM BIRU</h2><div class="score"><span id="blueScore">0</span> ⭐</div></div>
+<div class="progress"><span id="blueProgress"></span></div><div class="qmeta" id="blueMeta">Tekan MULAI untuk bermain</div>
+<div class="question" id="blueQuestion">Siap menjadi juara?</div><div class="answers" id="blueAnswers"></div>
+<div class="feedback" id="blueFeedback">Diskusikan bersama tim sebelum memilih.</div>
+<div class="nextrow"><span class="note" id="blueCount">0 / 50</span><button id="blueNext" disabled>Soal berikutnya →</button></div>
+</section>
+</main>
+<div class="overlay" id="overlay"><div class="modal"><div style="font-size:48px">🏆</div><h2 id="winnerTitle">Pemenang!</h2><p id="winnerText"></p><button onclick="document.getElementById('overlay').style.display='none'">Tutup</button></div></div>
+<script>
+const raw = [
+["Sikap pesawat terbang adalah sikap menirukan pesawat yang sedang...","Mendarat","Terbang","Parkir","Lepas landas",1],
+["Sikap pesawat terbang termasuk dalam gerak...","Senam lantai","Permainan bola","Atletik lari","Renang",0],
+["Pada sikap pesawat terbang, tumpuan badan adalah pada...","Dua kaki","Satu kaki","Dua tangan","Kepala",1],
+["Saat melakukan sikap pesawat terbang, kaki yang satu diangkat ke...","Depan","Samping","Belakang lurus sejajar badan","Ditekuk ke depan",2],
+["Posisi kedua tangan saat sikap pesawat terbang adalah...","Di pinggang","Direntangkan ke samping seperti sayap","Di atas kepala","Memegang lutut",1],
+["Posisi badan saat sikap pesawat terbang adalah...","Tegak","Membungkuk ke depan hingga sejajar lantai","Berbaring","Duduk",1],
+["Posisi kepala saat sikap pesawat terbang sebaiknya...","Menunduk ke bawah","Melihat ke depan","Melihat ke belakang","Miring ke samping",1],
+["Manfaat sikap pesawat terbang adalah untuk melatih...","Kekuatan tangan","Keseimbangan dan kekuatan kaki","Kecepatan lari","Kekuatan leher",1],
+["Alat yang sebaiknya digunakan saat latihan sikap pesawat terbang adalah...","Bola","Matras","Net","Tongkat",1],
+["Sebelum melakukan sikap pesawat terbang, sebaiknya kita melakukan...","Pemanasan","Makan","Tidur","Pendinginan",0],
+["Jika kaki kanan yang menjadi tumpuan, maka kaki yang diangkat adalah kaki...","Kanan","Kiri","Keduanya","Tidak ada",1],
+["Sikap pesawat terbang dilakukan dengan cara menahan sikap selama...","1 detik","Beberapa detik dengan seimbang","1 jam","Sampai jatuh",1],
+["Kesalahan yang sering terjadi saat sikap pesawat terbang adalah...","Badan tegak dan seimbang","Badan goyang dan kaki tumpuan tertekuk","Tangan direntangkan","Pandangan ke depan",1],
+["Sikap pesawat terbang melatih sikap tubuh agar...","Mudah jatuh","Seimbang dan tidak mudah goyah","Cepat lelah","Kaku",1],
+["Pada sikap pesawat terbang, kaki tumpuan sebaiknya...","Ditekuk sedikit","Lurus dan kuat menahan badan","Diangkat","Melompat",1],
+["Gerak sikap pesawat terbang termasuk dalam pola dominan senam lantai yaitu...","Keseimbangan","Melompat","Mengguling","Mengayun",0],
+["Setelah melakukan sikap pesawat terbang, sikap akhir yang benar adalah...","Langsung duduk","Kembali berdiri tegak dengan kedua kaki rapat","Langsung berlari","Jatuh ke matras",1],
+["Sikap lilin adalah sikap di mana badan bertumpu pada...","Kedua kaki","Punggung dan kedua tangan menopang pinggang","Kepala","Dada",1],
+["Sikap awal untuk melakukan sikap lilin adalah...","Berdiri tegak","Berbaring telentang di atas matras","Duduk","Jongkok",1],
+["Saat sikap lilin, posisi kedua kaki adalah...","Ditekuk","Lurus ke atas rapat","Dibuka lebar","Menyilang",1],
+["Posisi kedua tangan saat sikap lilin adalah...","Di samping badan","Menopang pinggang / panggul","Di atas kepala","Memegang kaki",1],
+["Dalam sikap lilin, bagian tubuh yang menjadi tumpuan utama adalah...","Leher","Punggung bagian atas dan pundak","Perut","Lutut",1],
+["Pandangan mata saat sikap lilin mengarah ke...","Ke belakang","Ke atas / ke ujung kaki","Ke samping","Pejam",1],
+["Manfaat sikap lilin adalah melatih...","Kekuatan otot perut dan keseimbangan","Kecepatan berlari","Kekuatan jari","Kelenturan jari",0],
+["Sikap lilin disebut juga sikap...","Meroda","Kayang","Lilin / candle","Kapal terbang",2],
+["Agar tidak cedera saat sikap lilin, gerakan harus dilakukan di atas...","Lantai keramik","Matras","Rumput kasar","Pasir",1],
+["Saat melakukan sikap lilin, kedua siku sebaiknya...","Terbuka lebar","Menempel di matras dan menopang pinggang","Diangkat ke atas","Lurus di samping",1],
+["Sikap akhir sikap lilin yang benar adalah...","Langsung berdiri","Turunkan kaki perlahan kembali berbaring","Langsung melompat","Jatuh ke samping",1],
+["Kesalahan umum saat sikap lilin adalah...","Kaki lurus ke atas","Pinggang tidak ditopang sehingga badan jatuh ke belakang","Tangan menopang pinggang","Badan lurus",1],
+["Sikap lilin membutuhkan kekuatan pada otot...","Leher saja","Perut, pinggang, dan lengan","Mata","Jari kaki",1],
+["Jika belum kuat, sikap lilin dapat dibantu oleh...","Teman memegangi kaki","Teman memegangi pinggang","Dibiarkan sendiri","Tanpa matras",1],
+["Posisi kaki saat sikap lilin yang benar adalah ujung kaki...","Ditekuk","Lurus mengarah ke atas seperti ujung lilin","Dibuka","Menempel matras",1],
+["Sikap lilin dilakukan dengan cara mengangkat kedua kaki dan pinggul secara...","Cepat dan menghentak","Perlahan dan terkontrol","Melompat","Berlari",1],
+["Senam sikap lilin melatih sikap tubuh agar...","Lentur dan seimbang","Kaku","Cepat lelah","Mudah jatuh",0],
+["Rol depan disebut juga dengan...","Guling depan","Guling belakang","Kayang","Meroda",0],
+["Sikap awal rol depan adalah...","Berdiri tegak","Jongkok dengan kedua tangan di matras","Berbaring","Duduk bersila",1],
+["Saat melakukan rol depan, bagian tubuh yang pertama menyentuh matras setelah tangan adalah...","Dada","Punggung bagian atas / tengkuk","Perut","Kaki",1],
+["Posisi dagu saat melakukan rol depan adalah...","Menengadah ke atas","Menempel ke dada / menunduk","Miring ke samping","Bebas",1],
+["Posisi kedua tangan saat awal rol depan adalah...","Di pinggang","Menempel di matras selebar bahu","Di atas kepala","Memegang lutut",1],
+["Gerakan rol depan dilakukan dengan cara...","Mengguling ke depan","Mengguling ke belakang","Melompat ke samping","Berdiri di tempat",0],
+["Setelah berguling, sikap akhir rol depan adalah...","Berbaring","Jongkok dan berdiri tegak","Duduk bersila","Tidur",1],
+["Manfaat rol depan adalah melatih...","Kelenturan, keseimbangan, dan keberanian","Kecepatan lari","Kekuatan menendang","Kekuatan melempar",0],
+["Agar rol depan bisa bulat dan tidak sakit, badan harus...","Kaku","Membulat seperti bola","Lurus","Miring",1],
+["Saat melakukan rol depan, kedua lutut sebaiknya...","Lurus","Ditekuk dan dipegang / rapat ke dada","Dibuka lebar","Diangkat tinggi",1],
+["Kesalahan yang sering terjadi saat rol depan adalah...","Dagu menempel ke dada","Badan tidak membulat dan kepala menengadah sehingga leher sakit","Tangan menempel di matras","Berguling ke depan",1],
+["Rol depan sebaiknya dilakukan di atas...","Matras","Lantai semen","Kerikil","Meja",0],
+["Jika takut melakukan rol depan, kita bisa berlatih dari sikap...","Berdiri","Jongkok di atas matras yang bertumpuk","Berlari","Duduk di kursi",1],
+["Urutan gerak rol depan yang benar adalah...","Jongkok - tangan di matras - dagu ke dada - guling - jongkok - berdiri","Berdiri - lari - guling - tidur","Duduk - guling - berdiri","Jongkok - guling ke belakang - berdiri",0],
+["Pada saat berguling, kedua tangan berfungsi untuk...","Menahan badan","Menolak dan membantu badan berguling","Memegang kepala","Memegang kaki",1],
+["Sikap pesawat terbang, sikap lilin, dan rol depan termasuk dalam cabang olahraga...","Senam lantai","Sepak bola","Bola voli","Bulu tangkis",0]
+];
+const letters=["A","B","C","D"];
+const teams={red:{name:"Tim Merah",order:[],idx:0,score:0,done:false},blue:{name:"Tim Biru",order:[],idx:0,score:0,done:false}};
+let started=false, finished=false;
+function shuffle(a){let b=[...a];for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+function el(id){return document.getElementById(id)}
+function startGame(){finished=false;started=true;for(const k of ["red","blue"]){teams[k]={...teams[k],order:shuffle(raw.map((_,i)=>i)),idx:0,score:0,done:false};}el("overlay").style.display="none";render("red");render("blue");updateRope()}
+function render(k){let t=teams[k],p=k==="red"?"red":"blue";let q=raw[t.order[t.idx]];el(p+"Score").textContent=t.score;el(p+"Total").textContent=t.score;el(p+"Progress").style.width=(t.idx/50*100)+"%";el(p+"Count").textContent=Math.min(t.idx+1,50)+" / 50";el(p+"Meta").textContent=t.done?"Permainan selesai":`Soal ${t.idx+1} dari 50`;el(p+"Feedback").textContent=t.done?"Semua soal telah dijawab.": "Pilih satu jawaban bersama tim.";el(p+"Next").disabled=true;
+if(t.done){el(p+"Question").textContent="Hebat! Semua soal selesai.";el(p+"Answers").innerHTML="";return}
+el(p+"Question").textContent=(t.order[t.idx]+1)+". "+q[0];let opts=q.slice(1,5);el(p+"Answers").innerHTML="";
+opts.forEach((a,i)=>{let b=document.createElement("button");b.className="answer";b.innerHTML=`<b>${letters[i]}</b><span>${a}</span>`;b.onclick=()=>answer(k,i,b);el(p+"Answers").appendChild(b)})}
+function answer(k,choice,btn){let t=teams[k];if(t.done||t.answered)return;t.answered=true;let q=raw[t.order[t.idx]],correct=q[5];[...el(k+"Answers").children].forEach((b,i)=>{b.disabled=true;if(i===correct)b.classList.add("correct");if(i===choice&&i!==correct)b.classList.add("wrong")});
+if(choice===correct){t.score++;el(k+"Feedback").textContent="✅ BENAR! Tim menarik tali +1 langkah!";}else{el(k+"Feedback").textContent="❌ Belum tepat. Jawaban benar: "+letters[correct]+". "+q[correct+1];}
+el(k+"Score").textContent=t.score;el(k+"Total").textContent=t.score;updateRope();el(k+"Next").disabled=false;el(k+"Next").textContent=t.idx===49?"Selesai ✓":"Lanjut otomatis…";if(t.idx===49){t.done=true;}setTimeout(()=>{if(teams[k].answered)next(k)},1200);}
+function next(k){let t=teams[k];if(!t.answered)return;if(t.idx<49)t.idx++;t.answered=false;render(k);if(teams.red.done&&teams.blue.done)showWinner()}
+function updateRope(){let diff=teams.blue.score-teams.red.score;let pos=Math.max(8,Math.min(92,50+diff*1.5));el("knot").style.left=pos+"%";el("redTotal").textContent=teams.red.score;el("blueTotal").textContent=teams.blue.score}
+function showWinner(){finished=true;let r=teams.red.score,b=teams.blue.score;el("winnerTitle").textContent=r===b?"SERI! 🤝":(r>b?"TIM MERAH MENANG! 🔴":"TIM BIRU MENANG! 🔵");el("winnerText").textContent=`Skor akhir: Merah ${r} — ${b} Biru. Selamat untuk kedua tim!`;el("overlay").style.display="flex"}
+function downloadQuestions(){let lines=["PAKET SOAL ACAK - TARIK TAMBANG KUIS PJOK","Kunci jawaban disertakan. Urutan soal diacak untuk setiap tim.",""];
+for(const k of ["red","blue"]){let t=teams[k];lines.push("=== "+t.name.toUpperCase()+" ===");let order=t.order.length?t.order:shuffle(raw.map((_,i)=>i));order.forEach((idx,n)=>{let q=raw[idx];lines.push(`${n+1}. ${q[0]}`);q.slice(1,5).forEach((a,i)=>lines.push(`   ${letters[i]}. ${a}`));lines.push(`   Kunci: ${letters[q[5]]} - ${q[q[5]+1]}`);lines.push("")});}
+let blob=new Blob(["\ufeff"+lines.join("\n")],{type:"text/plain;charset=utf-8"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="Soal_Acak_Tarik_Tambang_PJOK.txt";a.click();URL.revokeObjectURL(a.href)}
+el("startBtn").onclick=startGame;el("resetBtn").onclick=startGame;el("downloadBtn").onclick=downloadQuestions;el("redNext").onclick=()=>next("red");el("blueNext").onclick=()=>next("blue");el("fullBtn").onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.()};
+startGame();
+</script>
+</body></html>
